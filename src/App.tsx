@@ -180,17 +180,6 @@ const WeddingAdvice: React.FC = () => {
                 <p className="text-gray-800 mb-4 italic font-serif text-lg drop-cap">
                   {currentAdvice.advice}
                 </p>
-                <div className="text-right mt-6 border-t pt-4 border-amber-100">
-                  <p
-                    className="font-medium text-gray-900"
-                    style={{ fontFamily: "Baskerville, serif" }}
-                  >
-                    {currentAdvice.name}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {currentAdvice.relationship}
-                  </p>
-                </div>
               </CardContent>
             </Card>
           </div>
