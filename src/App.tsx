@@ -1,5 +1,5 @@
 const SHEET_ID = "105idB8rdnBT5nqC9DuUE495Nxp3CIJk-Z7q0umeMhC8";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Gem, Quote } from "lucide-react";
 import Papa from "papaparse";
@@ -12,6 +12,27 @@ interface AdviceEntry {
 
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
+function useCyclicRandomSelector<T>(list: T[]) {
+  // Store the original list in a ref to avoid reinitializing it on every render
+  const originalList = useRef([...list]);
+  // Current list that we will remove items from
+  const currentList = useRef([...list]);
+
+  const getNext = useCallback((): T => {
+    // If we've used up all elements, reset currentList from original
+    if (currentList.current.length === 0) {
+      currentList.current = [...originalList.current];
+    }
+
+    // Select a random index and remove that element
+    const randomIndex = Math.floor(Math.random() * currentList.current.length);
+    const [selectedItem] = currentList.current.splice(randomIndex, 1);
+    return selectedItem;
+  }, []);
+
+  return getNext;
+}
+
 const WeddingAdvice: React.FC = () => {
   const [advice, setAdvice] = useState<AdviceEntry[]>([]);
   const [currentAdvice, setCurrentAdvice] = useState<AdviceEntry | null>(null);
@@ -19,6 +40,7 @@ const WeddingAdvice: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState<boolean>(false);
+  const getNextItem = useCyclicRandomSelector(advice);
 
   useEffect(() => {
     setMounted(true);
@@ -55,10 +77,7 @@ const WeddingAdvice: React.FC = () => {
     if (isAnimating || advice.length <= 1) return;
 
     setIsAnimating(true);
-    let nextAdvice;
-    do {
-      nextAdvice = advice[Math.floor(Math.random() * advice.length)];
-    } while (nextAdvice === currentAdvice);
+    const nextAdvice = getNextItem();
 
     setTimeout(() => {
       setCurrentAdvice(nextAdvice);
@@ -69,7 +88,7 @@ const WeddingAdvice: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl">Opening our wedding album...</div>
+        <div className="text-xl">Opening advice...</div>
       </div>
     );
   }
