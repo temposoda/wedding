@@ -13,13 +13,17 @@ interface AdviceEntry {
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
 function useCyclicRandomSelector<T>(list: T[]) {
-  // Store the original list in a ref to avoid reinitializing it on every render
   const originalList = useRef([...list]);
-  // Current list that we will remove items from
   const currentList = useRef([...list]);
+
+  useEffect(() => {
+    originalList.current = [...list];
+    currentList.current = [...list];
+  }, [list]);
 
   const getNext = useCallback((): T => {
     // If we've used up all elements, reset currentList from original
+    console.log(currentList.current);
     if (currentList.current.length === 0) {
       currentList.current = [...originalList.current];
     }
@@ -78,7 +82,6 @@ const WeddingAdvice: React.FC = () => {
 
     setIsAnimating(true);
     const nextAdvice = getNextItem();
-
     setTimeout(() => {
       setCurrentAdvice(nextAdvice);
       setIsAnimating(false);
@@ -107,7 +110,7 @@ const WeddingAdvice: React.FC = () => {
         mounted ? "opacity-100" : ""
       }`}
     >
-      <style jsx>{`
+      <style jsx="true">{`
         @keyframes bookReveal {
           0% {
             transform: perspective(2000px) rotateY(-90deg);
@@ -161,9 +164,19 @@ const WeddingAdvice: React.FC = () => {
 
         .drop-cap::first-letter {
           float: left;
-          font-family: Baskerville, serif;
+          font-family: "Rouge Script", Baskerville, serif;
           font-size: 5.1em;
-          padding: 0em 0.2em 0 0;
+          margin: 0em 0.3em -0.3em 0;
+          line-height: 1;
+          color: rgb(180, 83, 9);
+          font-weight: bold;
+        }
+
+        .drop-cap-y::first-letter {
+          float: left;
+          font-family: "Rouge Script", Baskerville, serif;
+          font-size: 5.1em;
+          margin: 0em 0.1em 0em 0;
           line-height: 1;
           color: rgb(180, 83, 9);
           font-weight: bold;
@@ -195,8 +208,13 @@ const WeddingAdvice: React.FC = () => {
           >
             <Card className="bg-white shadow-lg legible">
               <CardContent className="p-6">
-                <Quote className="text-amber-700 w-8 h-8 mb-4" />
-                <p className="text-gray-800 mb-4 italic font-serif text-lg drop-cap">
+                <p
+                  className={`text-gray-800 mb-4 italic font-serif text-lg ${
+                    currentAdvice.advice.toLowerCase().startsWith("y")
+                      ? "drop-cap-y"
+                      : "drop-cap"
+                  }`}
+                >
                   {currentAdvice.advice}
                 </p>
               </CardContent>
