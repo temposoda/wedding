@@ -1,7 +1,7 @@
 const SHEET_ID = "105idB8rdnBT5nqC9DuUE495Nxp3CIJk-Z7q0umeMhC8";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Gem, Quote } from "lucide-react";
+import { Gem } from "lucide-react";
 import Papa from "papaparse";
 
 interface AdviceEntry {
@@ -110,7 +110,7 @@ const WeddingAdvice: React.FC = () => {
         mounted ? "opacity-100" : ""
       }`}
     >
-      <style jsx="true">{`
+      <style jsx>{`
         @keyframes bookReveal {
           0% {
             transform: perspective(2000px) rotateY(-90deg);
