@@ -88,11 +88,25 @@ const WeddingAdvice: React.FC = () => {
 
   const currentAdvice = advice[currentIndex];
 
+  const handleTouchNavigation = (e: React.TouchEvent) => {
+    const touchX = e.changedTouches[0].clientX;
+    const screenWidth = window.innerWidth;
+
+    if (touchX < screenWidth / 3) {
+      // Left third of screen - go to previous
+      if (currentIndex > 0) goToPreviousPage();
+    } else if (touchX > (screenWidth * 2) / 3) {
+      // Right third of screen - go to next
+      if (currentIndex < advice.length - 1) goToNextPage();
+    }
+  };
+
   return (
     <div
       className={`min-h-screen bg-gradient-to-b from-amber-50 to-white opacity-0 transition-opacity duration-1000 ${
         mounted ? "opacity-100" : ""
       }`}
+      onTouchEnd={handleTouchNavigation}
     >
       <style jsx>{`
         @keyframes bookReveal {
@@ -146,7 +160,7 @@ const WeddingAdvice: React.FC = () => {
           background: linear-gradient(45deg, #f3e7d9, #fff);
         }
 
-        .drop-cap::first-letter {
+        .drop-cap > p:first-child::first-letter {
           float: left;
           font-family: "Rouge Script", Baskerville, serif;
           font-size: 5.1em;
@@ -156,7 +170,7 @@ const WeddingAdvice: React.FC = () => {
           font-weight: bold;
         }
 
-        .drop-cap-y::first-letter {
+        .drop-cap-y > p:first-child::first-letter {
           float: left;
           font-family: "Rouge Script", Baskerville, serif;
           font-size: 5.1em;
@@ -169,6 +183,11 @@ const WeddingAdvice: React.FC = () => {
         .legible {
           max-width: 80ch;
         }
+
+        .advice-card {
+          line-height: 1.6;
+          letter-spacing: 0.01em;
+        }
       `}</style>
 
       <header className="text-center py-12">
@@ -179,33 +198,62 @@ const WeddingAdvice: React.FC = () => {
         >
           Kiley & Michael
         </h1>
-        <p className="text-gray-600">Use the arrows to navigate advice</p>
+        <p className="text-gray-600">
+          Use arrows to navigate or swipe on mobile
+        </p>
       </header>
 
       <main className="container mx-auto px-4 pb-16">
         {currentAdvice && (
           <div className="flex flex-col items-center">
+            {/* Touch areas for mobile navigation */}
+            <div className="hidden sm:flex w-full relative">
+              <div
+                className="absolute left-0 top-0 w-1/4 h-full cursor-pointer z-10"
+                onClick={() => currentIndex > 0 && goToPreviousPage()}
+              />
+              <div
+                className="absolute right-0 top-0 w-1/4 h-full cursor-pointer z-10"
+                onClick={() =>
+                  currentIndex < advice.length - 1 && goToNextPage()
+                }
+              />
+            </div>
             <div
               className={`${
                 isAnimating ? "page-leave" : "page-enter"
               } flex justify-center items-center`}
             >
               <Card className="bg-white shadow-lg legible">
-                <CardContent className="p-6">
-                  <p
-                    className={`text-gray-800 mb-4 italic font-serif text-lg ${
+                <CardContent className="p-6 advice-card">
+                  <div
+                    className={`text-gray-800 mb-6 italic font-serif text-lg ${
                       currentAdvice.advice.toLowerCase().startsWith("y")
                         ? "drop-cap-y"
                         : "drop-cap"
                     }`}
                   >
-                    {currentAdvice.advice}
-                  </p>
+                    {currentAdvice.advice
+                      .split("\n")
+                      .map((paragraph, index) => (
+                        <p key={index} className="mb-4">
+                          {paragraph}
+                        </p>
+                      ))}
+                  </div>
+                  <div className="text-right font-medium text-amber-700 mt-4">
+                    — {currentAdvice.name}
+                    {currentAdvice.relationship && (
+                      <span className="text-gray-500 text-sm ml-2">
+                        ({currentAdvice.relationship})
+                      </span>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
-            <div className="mt-8 flex items-center justify-center gap-4">
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Button
                 variant="outline"
                 size="lg"
@@ -229,6 +277,17 @@ const WeddingAdvice: React.FC = () => {
                 Next
                 <ChevronRight />
               </Button>
+
+              {currentIndex > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 w-full sm:w-auto"
+                  onClick={() => navigateToPage(0)}
+                >
+                  Start Over
+                </Button>
+              )}
             </div>
           </div>
         )}
