@@ -1,7 +1,8 @@
 const SHEET_ID = "105idB8rdnBT5nqC9DuUE495Nxp3CIJk-Z7q0umeMhC8";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Gem } from "lucide-react";
+import { Gem, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import Papa from "papaparse";
 
 interface AdviceEntry {
@@ -12,39 +13,12 @@ interface AdviceEntry {
 
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
-function useCyclicRandomSelector<T>(list: T[]) {
-  const originalList = useRef([...list]);
-  const currentList = useRef([...list]);
-
-  useEffect(() => {
-    originalList.current = [...list];
-    currentList.current = [...list];
-  }, [list]);
-
-  const getNext = useCallback((): T => {
-    // If we've used up all elements, reset currentList from original
-    console.log(currentList.current);
-    if (currentList.current.length === 0) {
-      currentList.current = [...originalList.current];
-    }
-
-    // Select a random index and remove that element
-    const randomIndex = Math.floor(Math.random() * currentList.current.length);
-    const [selectedItem] = currentList.current.splice(randomIndex, 1);
-    return selectedItem;
-  }, []);
-
-  return getNext;
-}
-
 const WeddingAdvice: React.FC = () => {
   const [advice, setAdvice] = useState<AdviceEntry[]>([]);
-  const [currentAdvice, setCurrentAdvice] = useState<AdviceEntry | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState<boolean>(false);
-  const getNextItem = useCyclicRandomSelector(advice);
 
   useEffect(() => {
     setMounted(true);
@@ -66,7 +40,6 @@ const WeddingAdvice: React.FC = () => {
           .filter((entry) => entry.name && entry.advice);
 
         setAdvice(entries);
-        setCurrentAdvice(entries[Math.floor(Math.random() * entries.length)]);
         setLoading(false);
       } catch (err) {
         setError("Failed to load wedding advice");
@@ -77,15 +50,19 @@ const WeddingAdvice: React.FC = () => {
     fetchAdvice();
   }, []);
 
-  const showNextQuote = () => {
-    if (isAnimating || advice.length <= 1) return;
+  const navigateToPage = (newIndex: number) => {
+    if (advice.length === 0) return;
+    if (newIndex < 0 || newIndex >= advice.length) return;
 
-    setIsAnimating(true);
-    const nextAdvice = getNextItem();
-    setTimeout(() => {
-      setCurrentAdvice(nextAdvice);
-      setIsAnimating(false);
-    }, 600); // Match this with animation duration
+    setCurrentIndex(newIndex);
+  };
+
+  const goToNextPage = () => {
+    navigateToPage(currentIndex + 1);
+  };
+
+  const goToPreviousPage = () => {
+    navigateToPage(currentIndex - 1);
   };
 
   if (loading) {
@@ -104,55 +81,42 @@ const WeddingAdvice: React.FC = () => {
     );
   }
 
+  const currentAdvice = advice[currentIndex];
+
+  const handleTouchNavigation = (e: React.TouchEvent) => {
+    const touchX = e.changedTouches[0].clientX;
+    const screenWidth = window.innerWidth;
+
+    if (touchX < screenWidth / 3) {
+      // Left third of screen - go to previous
+      if (currentIndex > 0) goToPreviousPage();
+    } else if (touchX > (screenWidth * 2) / 3) {
+      // Right third of screen - go to next
+      if (currentIndex < advice.length - 1) goToNextPage();
+    }
+  };
+
   return (
     <div
       className={`min-h-screen bg-gradient-to-b from-amber-50 to-white opacity-0 transition-opacity duration-1000 ${
         mounted ? "opacity-100" : ""
       }`}
+      onTouchEnd={handleTouchNavigation}
     >
       <style jsx>{`
         @keyframes bookReveal {
           0% {
-            transform: perspective(2000px) rotateY(-90deg);
-            transform-origin: left;
+            transform: translateY(10px);
             opacity: 0;
           }
           100% {
-            transform: perspective(2000px) rotateY(0deg);
-            transform-origin: left;
-            opacity: 1;
-          }
-        }
-
-        @keyframes pageLeave {
-          0% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 0;
-          }
-        }
-
-        @keyframes pageEnter {
-          0% {
-            opacity: 0;
-          }
-          100% {
+            transform: translateY(0);
             opacity: 1;
           }
         }
 
         .animate-book-reveal {
-          animation: bookReveal 1.2s ease-out forwards;
-          backface-visibility: hidden;
-        }
-
-        .page-leave {
-          animation: pageLeave 0.6s ease-in forwards;
-        }
-
-        .page-enter {
-          animation: pageEnter 0.6s ease-out forwards;
+          animation: bookReveal 0.5s ease-out forwards;
         }
 
         .book-border {
@@ -162,28 +126,13 @@ const WeddingAdvice: React.FC = () => {
           background: linear-gradient(45deg, #f3e7d9, #fff);
         }
 
-        .drop-cap::first-letter {
-          float: left;
-          font-family: "Rouge Script", Baskerville, serif;
-          font-size: 5.1em;
-          margin: 0em 0.3em -0.3em 0;
-          line-height: 1;
-          color: rgb(180, 83, 9);
-          font-weight: bold;
-        }
-
-        .drop-cap-y::first-letter {
-          float: left;
-          font-family: "Rouge Script", Baskerville, serif;
-          font-size: 5.1em;
-          margin: 0em 0.1em 0em 0;
-          line-height: 1;
-          color: rgb(180, 83, 9);
-          font-weight: bold;
-        }
-
         .legible {
           max-width: 80ch;
+        }
+
+        .advice-card {
+          line-height: 1.6;
+          letter-spacing: 0.01em;
         }
       `}</style>
 
@@ -195,30 +144,87 @@ const WeddingAdvice: React.FC = () => {
         >
           Kiley & Michael
         </h1>
-        <p className="text-gray-600">Click or tap to see more advice...</p>
+        <p className="text-gray-600">
+          Use arrows to navigate or swipe on mobile
+        </p>
       </header>
 
       <main className="container mx-auto px-4 pb-16">
         {currentAdvice && (
-          <div
-            className={`cursor-pointer ${
-              isAnimating ? "page-leave" : "page-enter"
-            } flex justify-center items-center`}
-            onClick={showNextQuote}
-          >
-            <Card className="bg-white shadow-lg legible">
-              <CardContent className="p-6">
-                <p
-                  className={`text-gray-800 mb-4 italic font-serif text-lg ${
-                    currentAdvice.advice.toLowerCase().startsWith("y")
-                      ? "drop-cap-y"
-                      : "drop-cap"
-                  }`}
+          <div className="flex flex-col items-center">
+            {/* Touch areas for mobile navigation */}
+            <div className="hidden sm:flex w-full relative">
+              <div
+                className="absolute left-0 top-0 w-1/4 h-full cursor-pointer z-10"
+                onClick={() => currentIndex > 0 && goToPreviousPage()}
+              />
+              <div
+                className="absolute right-0 top-0 w-1/4 h-full cursor-pointer z-10"
+                onClick={() =>
+                  currentIndex < advice.length - 1 && goToNextPage()
+                }
+              />
+            </div>
+            <div className="flex justify-center items-center">
+              <Card className="bg-white shadow-lg legible">
+                <CardContent className="p-6 advice-card">
+                  <div className="text-gray-800 mb-6 font-serif text-lg">
+                    {currentAdvice.advice
+                      .split("\n")
+                      .map((paragraph, index) => (
+                        <p key={index} className="mb-4">
+                          {paragraph}
+                        </p>
+                      ))}
+                  </div>
+                  <div className="text-right font-medium text-amber-700 mt-4">
+                    — {currentAdvice.name}
+                    {currentAdvice.relationship && (
+                      <span className="text-gray-500 text-sm ml-2">
+                        ({currentAdvice.relationship})
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={goToPreviousPage}
+                disabled={currentIndex === 0}
+              >
+                <ChevronLeft />
+                Previous
+              </Button>
+
+              <div className="text-amber-800 font-medium px-4">
+                {currentIndex + 1} / {advice.length}
+              </div>
+
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={goToNextPage}
+                disabled={currentIndex === advice.length - 1}
+              >
+                Next
+                <ChevronRight />
+              </Button>
+
+              {currentIndex > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 w-full sm:w-auto"
+                  onClick={() => navigateToPage(0)}
                 >
-                  {currentAdvice.advice}
-                </p>
-              </CardContent>
-            </Card>
+                  Start Over
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </main>
