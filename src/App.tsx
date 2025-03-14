@@ -16,7 +16,6 @@ const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tq
 const WeddingAdvice: React.FC = () => {
   const [advice, setAdvice] = useState<AdviceEntry[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState<boolean>(false);
@@ -52,14 +51,10 @@ const WeddingAdvice: React.FC = () => {
   }, []);
 
   const navigateToPage = (newIndex: number) => {
-    if (isAnimating || advice.length === 0) return;
+    if (advice.length === 0) return;
     if (newIndex < 0 || newIndex >= advice.length) return;
 
-    setIsAnimating(true);
-    setTimeout(() => {
-      setCurrentIndex(newIndex);
-      setIsAnimating(false);
-    }, 600); // Match this with animation duration
+    setCurrentIndex(newIndex);
   };
 
   const goToNextPage = () => {
@@ -111,46 +106,17 @@ const WeddingAdvice: React.FC = () => {
       <style jsx>{`
         @keyframes bookReveal {
           0% {
-            transform: perspective(2000px) rotateY(-90deg);
-            transform-origin: left;
+            transform: translateY(10px);
             opacity: 0;
           }
           100% {
-            transform: perspective(2000px) rotateY(0deg);
-            transform-origin: left;
-            opacity: 1;
-          }
-        }
-
-        @keyframes pageLeave {
-          0% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 0;
-          }
-        }
-
-        @keyframes pageEnter {
-          0% {
-            opacity: 0;
-          }
-          100% {
+            transform: translateY(0);
             opacity: 1;
           }
         }
 
         .animate-book-reveal {
-          animation: bookReveal 1.2s ease-out forwards;
-          backface-visibility: hidden;
-        }
-
-        .page-leave {
-          animation: pageLeave 0.6s ease-in forwards;
-        }
-
-        .page-enter {
-          animation: pageEnter 0.6s ease-out forwards;
+          animation: bookReveal 0.5s ease-out forwards;
         }
 
         .book-border {
@@ -158,26 +124,6 @@ const WeddingAdvice: React.FC = () => {
           border-radius: 8px;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
           background: linear-gradient(45deg, #f3e7d9, #fff);
-        }
-
-        .drop-cap > p:first-child::first-letter {
-          float: left;
-          font-family: "Rouge Script", Baskerville, serif;
-          font-size: 5.1em;
-          margin: 0em 0.3em -0.3em 0;
-          line-height: 1;
-          color: rgb(180, 83, 9);
-          font-weight: bold;
-        }
-
-        .drop-cap-y > p:first-child::first-letter {
-          float: left;
-          font-family: "Rouge Script", Baskerville, serif;
-          font-size: 5.1em;
-          margin: 0em 0.1em 0em 0;
-          line-height: 1;
-          color: rgb(180, 83, 9);
-          font-weight: bold;
         }
 
         .legible {
@@ -219,20 +165,10 @@ const WeddingAdvice: React.FC = () => {
                 }
               />
             </div>
-            <div
-              className={`${
-                isAnimating ? "page-leave" : "page-enter"
-              } flex justify-center items-center`}
-            >
+            <div className="flex justify-center items-center">
               <Card className="bg-white shadow-lg legible">
                 <CardContent className="p-6 advice-card">
-                  <div
-                    className={`text-gray-800 mb-6 italic font-serif text-lg ${
-                      currentAdvice.advice.toLowerCase().startsWith("y")
-                        ? "drop-cap-y"
-                        : "drop-cap"
-                    }`}
-                  >
+                  <div className="text-gray-800 mb-6 font-serif text-lg">
                     {currentAdvice.advice
                       .split("\n")
                       .map((paragraph, index) => (
@@ -258,7 +194,7 @@ const WeddingAdvice: React.FC = () => {
                 variant="outline"
                 size="lg"
                 onClick={goToPreviousPage}
-                disabled={currentIndex === 0 || isAnimating}
+                disabled={currentIndex === 0}
               >
                 <ChevronLeft />
                 Previous
@@ -272,7 +208,7 @@ const WeddingAdvice: React.FC = () => {
                 variant="outline"
                 size="lg"
                 onClick={goToNextPage}
-                disabled={currentIndex === advice.length - 1 || isAnimating}
+                disabled={currentIndex === advice.length - 1}
               >
                 Next
                 <ChevronRight />
