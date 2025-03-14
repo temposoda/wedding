@@ -1,7 +1,8 @@
 const SHEET_ID = "105idB8rdnBT5nqC9DuUE495Nxp3CIJk-Z7q0umeMhC8";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Gem } from "lucide-react";
+import { Gem, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import Papa from "papaparse";
 
 interface AdviceEntry {
@@ -12,39 +13,13 @@ interface AdviceEntry {
 
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
-function useCyclicRandomSelector<T>(list: T[]) {
-  const originalList = useRef([...list]);
-  const currentList = useRef([...list]);
-
-  useEffect(() => {
-    originalList.current = [...list];
-    currentList.current = [...list];
-  }, [list]);
-
-  const getNext = useCallback((): T => {
-    // If we've used up all elements, reset currentList from original
-    console.log(currentList.current);
-    if (currentList.current.length === 0) {
-      currentList.current = [...originalList.current];
-    }
-
-    // Select a random index and remove that element
-    const randomIndex = Math.floor(Math.random() * currentList.current.length);
-    const [selectedItem] = currentList.current.splice(randomIndex, 1);
-    return selectedItem;
-  }, []);
-
-  return getNext;
-}
-
 const WeddingAdvice: React.FC = () => {
   const [advice, setAdvice] = useState<AdviceEntry[]>([]);
-  const [currentAdvice, setCurrentAdvice] = useState<AdviceEntry | null>(null);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState<boolean>(false);
-  const getNextItem = useCyclicRandomSelector(advice);
 
   useEffect(() => {
     setMounted(true);
@@ -66,7 +41,6 @@ const WeddingAdvice: React.FC = () => {
           .filter((entry) => entry.name && entry.advice);
 
         setAdvice(entries);
-        setCurrentAdvice(entries[Math.floor(Math.random() * entries.length)]);
         setLoading(false);
       } catch (err) {
         setError("Failed to load wedding advice");
@@ -77,15 +51,23 @@ const WeddingAdvice: React.FC = () => {
     fetchAdvice();
   }, []);
 
-  const showNextQuote = () => {
-    if (isAnimating || advice.length <= 1) return;
+  const navigateToPage = (newIndex: number) => {
+    if (isAnimating || advice.length === 0) return;
+    if (newIndex < 0 || newIndex >= advice.length) return;
 
     setIsAnimating(true);
-    const nextAdvice = getNextItem();
     setTimeout(() => {
-      setCurrentAdvice(nextAdvice);
+      setCurrentIndex(newIndex);
       setIsAnimating(false);
     }, 600); // Match this with animation duration
+  };
+
+  const goToNextPage = () => {
+    navigateToPage(currentIndex + 1);
+  };
+
+  const goToPreviousPage = () => {
+    navigateToPage(currentIndex - 1);
   };
 
   if (loading) {
@@ -103,6 +85,8 @@ const WeddingAdvice: React.FC = () => {
       </div>
     );
   }
+
+  const currentAdvice = advice[currentIndex];
 
   return (
     <div
@@ -195,30 +179,57 @@ const WeddingAdvice: React.FC = () => {
         >
           Kiley & Michael
         </h1>
-        <p className="text-gray-600">Click or tap to see more advice...</p>
+        <p className="text-gray-600">Use the arrows to navigate advice</p>
       </header>
 
       <main className="container mx-auto px-4 pb-16">
         {currentAdvice && (
-          <div
-            className={`cursor-pointer ${
-              isAnimating ? "page-leave" : "page-enter"
-            } flex justify-center items-center`}
-            onClick={showNextQuote}
-          >
-            <Card className="bg-white shadow-lg legible">
-              <CardContent className="p-6">
-                <p
-                  className={`text-gray-800 mb-4 italic font-serif text-lg ${
-                    currentAdvice.advice.toLowerCase().startsWith("y")
-                      ? "drop-cap-y"
-                      : "drop-cap"
-                  }`}
-                >
-                  {currentAdvice.advice}
-                </p>
-              </CardContent>
-            </Card>
+          <div className="flex flex-col items-center">
+            <div
+              className={`${
+                isAnimating ? "page-leave" : "page-enter"
+              } flex justify-center items-center`}
+            >
+              <Card className="bg-white shadow-lg legible">
+                <CardContent className="p-6">
+                  <p
+                    className={`text-gray-800 mb-4 italic font-serif text-lg ${
+                      currentAdvice.advice.toLowerCase().startsWith("y")
+                        ? "drop-cap-y"
+                        : "drop-cap"
+                    }`}
+                  >
+                    {currentAdvice.advice}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="mt-8 flex items-center justify-center gap-4">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={goToPreviousPage}
+                disabled={currentIndex === 0 || isAnimating}
+              >
+                <ChevronLeft />
+                Previous
+              </Button>
+
+              <div className="text-amber-800 font-medium px-4">
+                {currentIndex + 1} / {advice.length}
+              </div>
+
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={goToNextPage}
+                disabled={currentIndex === advice.length - 1 || isAnimating}
+              >
+                Next
+                <ChevronRight />
+              </Button>
+            </div>
           </div>
         )}
       </main>
