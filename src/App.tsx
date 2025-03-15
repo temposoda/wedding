@@ -53,7 +53,7 @@ const WeddingAdvice: React.FC = () => {
   const navigateToPage = (newIndex: number) => {
     if (advice.length === 0) return;
     if (newIndex < 0 || newIndex >= advice.length) return;
-
+    
     setCurrentIndex(newIndex);
   };
 
@@ -86,12 +86,13 @@ const WeddingAdvice: React.FC = () => {
   const handleTouchNavigation = (e: React.TouchEvent) => {
     const touchX = e.changedTouches[0].clientX;
     const screenWidth = window.innerWidth;
-
-    if (touchX < screenWidth / 3) {
-      // Left third of screen - go to previous
+    
+    // Only detect taps on the outer 15% of the screen edges
+    if (touchX < screenWidth * 0.15) {
+      // Left edge of screen - go to previous
       if (currentIndex > 0) goToPreviousPage();
-    } else if (touchX > (screenWidth * 2) / 3) {
-      // Right third of screen - go to next
+    } else if (touchX > screenWidth * 0.85) {
+      // Right edge of screen - go to next
       if (currentIndex < advice.length - 1) goToNextPage();
     }
   };
@@ -129,7 +130,7 @@ const WeddingAdvice: React.FC = () => {
         .legible {
           max-width: 80ch;
         }
-
+        
         .advice-card {
           line-height: 1.6;
           letter-spacing: 0.01em;
@@ -144,38 +145,53 @@ const WeddingAdvice: React.FC = () => {
         >
           Kiley & Michael
         </h1>
-        <p className="text-gray-600">
-          Use arrows to navigate or swipe on mobile
-        </p>
+        <p className="text-gray-600">Use arrows to navigate or tap edges on mobile</p>
       </header>
 
       <main className="container mx-auto px-4 pb-16">
         {currentAdvice && (
           <div className="flex flex-col items-center">
-            {/* Touch areas for mobile navigation */}
-            <div className="hidden sm:flex w-full relative">
-              <div
-                className="absolute left-0 top-0 w-1/4 h-full cursor-pointer z-10"
-                onClick={() => currentIndex > 0 && goToPreviousPage()}
-              />
-              <div
-                className="absolute right-0 top-0 w-1/4 h-full cursor-pointer z-10"
-                onClick={() =>
-                  currentIndex < advice.length - 1 && goToNextPage()
-                }
-              />
+            {/* Visual indicators for touch areas (mobile) */}
+            <div className="md:hidden w-full flex justify-between absolute top-0 h-full pointer-events-none">
+              <div className="w-12 h-full bg-amber-50 bg-opacity-30 rounded-l-lg"></div>
+              <div className="w-12 h-full bg-amber-50 bg-opacity-30 rounded-r-lg"></div>
             </div>
-            <div className="flex justify-center items-center">
+            <div className="flex justify-center items-center relative">
               <Card className="bg-white shadow-lg legible">
+                {/* Top navigation on mobile */}
+                <div className="md:hidden flex justify-between items-center border-b p-3 bg-amber-50 bg-opacity-30 rounded-t-lg">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={goToPreviousPage}
+                    disabled={currentIndex === 0}
+                    className="px-2"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  
+                  <div className="text-amber-800 font-medium">
+                    {currentIndex + 1} / {advice.length}
+                  </div>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={goToNextPage}
+                    disabled={currentIndex === advice.length - 1}
+                    className="px-2"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                </div>
+                
                 <CardContent className="p-6 advice-card">
-                  <div className="text-gray-800 mb-6 font-serif text-lg">
-                    {currentAdvice.advice
-                      .split("\n")
-                      .map((paragraph, index) => (
-                        <p key={index} className="mb-4">
-                          {paragraph}
-                        </p>
-                      ))}
+                  <div className="text-gray-800 mb-6 font-serif text-lg min-h-[240px]">
+                    {currentAdvice.advice.split('\n').map((paragraph, index) => (
+                      <p key={index} className="mb-4">
+                        {paragraph}
+                      </p>
+                    ))}
                   </div>
                   <div className="text-right font-medium text-amber-700 mt-4">
                     — {currentAdvice.name}
@@ -188,35 +204,35 @@ const WeddingAdvice: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
-
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <Button
-                variant="outline"
-                size="lg"
+            
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4 md:block hidden">
+              <Button 
+                variant="outline" 
+                size="lg" 
                 onClick={goToPreviousPage}
                 disabled={currentIndex === 0}
               >
                 <ChevronLeft />
                 Previous
               </Button>
-
+              
               <div className="text-amber-800 font-medium px-4">
                 {currentIndex + 1} / {advice.length}
               </div>
-
-              <Button
-                variant="outline"
-                size="lg"
+              
+              <Button 
+                variant="outline" 
+                size="lg" 
                 onClick={goToNextPage}
                 disabled={currentIndex === advice.length - 1}
               >
                 Next
                 <ChevronRight />
               </Button>
-
+              
               {currentIndex > 0 && (
-                <Button
-                  variant="ghost"
+                <Button 
+                  variant="ghost" 
                   size="sm"
                   className="mt-2 w-full sm:w-auto"
                   onClick={() => navigateToPage(0)}
@@ -225,6 +241,42 @@ const WeddingAdvice: React.FC = () => {
                 </Button>
               )}
             </div>
+            
+            {/* Fixed bottom navigation for mobile */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-between items-center">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={goToPreviousPage}
+                disabled={currentIndex === 0}
+              >
+                <ChevronLeft />
+                Prev
+              </Button>
+              
+              {currentIndex > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => navigateToPage(0)}
+                >
+                  Start Over
+                </Button>
+              )}
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={goToNextPage}
+                disabled={currentIndex === advice.length - 1}
+              >
+                Next
+                <ChevronRight />
+              </Button>
+            </div>
+            
+            {/* Bottom padding to account for fixed navigation on mobile */}
+            <div className="md:hidden h-16"></div>
           </div>
         )}
       </main>
